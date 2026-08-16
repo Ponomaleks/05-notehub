@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  keepPreviousData,
-  useIsMutating,
-} from '@tanstack/react-query';
+import { useIsMutating } from '@tanstack/react-query';
 import { useDebouncedCallback } from 'use-debounce';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -18,89 +12,51 @@ import {
   NoteForm,
   Loader,
 } from '../index';
-import {
-  fetchNotes,
-  deleteNote,
-  createNote,
-  type FetchNotesResponse,
-} from '../../services/noteService';
-import type { NewNote } from '../../types/note';
+import { deleteNote, createNote } from '../../services/noteService';
+import { useFetchNotes } from '../../hooks/useFetchNotes';
+import { useNotesMutations } from '../../hooks/useNotesMutations';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const queryClient = useQueryClient();
-
-  const { data, isFetching, isError, error } = useQuery<FetchNotesResponse>({
-    queryKey: ['notes', searchQuery, currentPage],
-    queryFn: () => fetchNotes({ search: searchQuery, page: currentPage }),
-    placeholderData: keepPreviousData,
-    staleTime: 1000 * 30, // 15 seconds
+  const { data, isFetching, isError, error } = useFetchNotes(
+    searchQuery,
+    currentPage,
+  );
+  const { handleDeleteNote, handleCreateNote } = useNotesMutations({
+    deleteNoteFn: deleteNote,
+    createNoteFn: createNote,
+    setIsModalOpen,
   });
-
-  const deleteNoteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-    },
-    onError: (error: any) => {
-      toast.error(
-        error?.message || 'An error occurred while deleting the note.',
-      );
-      console.error('Error deleting note:', error);
-    },
-  });
-
-  const createNoteMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-      setIsModalOpen(false);
-    },
-    onError: (error: any) => {
-      toast.error(
-        error?.message || 'An error occurred while creating the note.',
-      );
-      console.error('Error creating note:', error);
-    },
-  });
-
-  const isMutating = useIsMutating() > 0;
-  const isBusy = isFetching || isMutating;
-
-  const debouncedSetQuery = useDebouncedCallback((query: string) => {
-    setSearchQuery(query);
-  }, 500);
-
-  const openModal = () => {
-    if (!isModalOpen) {
-      setIsModalOpen(true);
-    }
-  };
-
-  const notes = data?.notes || [];
-  const totalPages = data?.totalPages || 0;
 
   if (isError) {
     toast.error(error?.message || 'An error occurred while fetching notes.');
     console.error('!Error fetching notes:', error);
   }
 
-  const handleDeleteNote = (noteId: string) => {
-    deleteNoteMutation.mutate(noteId);
+  const handleSetQuery = useDebouncedCallback((query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  }, 500);
+
+  const handleOpenModal = () => {
+    if (!isModalOpen) {
+      setIsModalOpen(true);
+    }
   };
 
-  const handleCreateNote = (values: NewNote) => {
-    createNoteMutation.mutate(values);
-  };
+  const isMutating = useIsMutating() > 0;
+  const isBusy = isFetching || isMutating;
+  const notes = data?.notes || [];
+  const totalPages = data?.totalPages || 0;
 
   return (
     <>
       <div className={css.app}>
         <header className={css.toolbar}>
-          <SearchBox setQuery={debouncedSetQuery} />
+          <SearchBox setQuery={handleSetQuery} />
           {totalPages > 1 && (
             <Pagination
               page={currentPage}
@@ -108,7 +64,7 @@ function App() {
               setPage={setCurrentPage}
             />
           )}
-          <button className={css.button} onClick={openModal}>
+          <button className={css.button} onClick={handleOpenModal}>
             Create note +
           </button>
         </header>
