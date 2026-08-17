@@ -10,14 +10,6 @@ export interface Note extends NewNote {
   updatedAt: string;
 }
 
-
-export const SortByValues = {
-  CREATED: "created",
-  UPDATED: "updated",
-} as const;
-
-export type SortBy = typeof SortByValues[keyof typeof SortByValues];
-
 export const TagValues = {
   WORK: "Work",
   PERSONAL: "Personal",

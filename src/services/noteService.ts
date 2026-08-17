@@ -1,6 +1,5 @@
 import axios from "axios";
-import type { NewNote, Note, SortBy, NoteTag } from "../types/note";
-import { SortByValues } from "../types/note";
+import type { NewNote, Note, NoteTag } from "../types/note";
 
 
 const BASE_URL = "https://notehub-public.goit.study/api";
@@ -10,6 +9,10 @@ const PER_PAGE = 10;
 axios.defaults.baseURL = BASE_URL;
 axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+export interface FetchNotesResponse {
+  notes: Note[];
+  totalPages: number;
+}
 
 interface FetchNotesRequest {
   search?: string;
@@ -22,10 +25,12 @@ interface FetchNotesParams extends FetchNotesRequest {
   sortBy: SortBy;
 }
 
-export interface FetchNotesResponse {
-  notes: Note[];
-  totalPages: number;
-}
+const SortByValues = {
+  CREATED: "created",
+  UPDATED: "updated",
+} as const;
+
+type SortBy = typeof SortByValues[keyof typeof SortByValues];
 
 export const fetchNotes = async ({ search, tag, page }: FetchNotesRequest): Promise<FetchNotesResponse> => {
   try {
@@ -38,7 +43,7 @@ export const fetchNotes = async ({ search, tag, page }: FetchNotesRequest): Prom
       params.tag = tag;
     }
 
-    const response = await axios.get("/notes", { params });
+    const response = await axios.get<FetchNotesResponse>("/notes", { params });
 
     return response.data;
   } catch (error) {
@@ -47,19 +52,9 @@ export const fetchNotes = async ({ search, tag, page }: FetchNotesRequest): Prom
   }
 }
 
-export const getNoteById = async (id: string): Promise<Note> => {
-  try {
-    const response = await axios.get(`/notes/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching note by ID:", error);
-    throw error;
-  }
-}
-
 export const createNote = async (note: NewNote): Promise<Note> => {
   try {
-    const response = await axios.post("/notes", note);
+    const response = await axios.post<Note>("/notes", note);
     return response.data;
   } catch (error) {
     console.error("Error posting note:", error);
@@ -67,19 +62,9 @@ export const createNote = async (note: NewNote): Promise<Note> => {
   }
 }
 
-export const updateNote = async (id: string, note: Partial<NewNote>): Promise<Note> => {
-  try {
-    const response = await axios.put(`/notes/${id}`, note);
-    return response.data;
-  } catch (error) {
-    console.error("Error updating note:", error);
-    throw error;
-  }
-}
-
 export const deleteNote = async (id: string): Promise<Note> => {
   try {
-    const response = await axios.delete(`/notes/${id}`);
+    const response = await axios.delete<Note>(`/notes/${id}`);
     return response.data;
   } catch (error) {
     console.error("Error deleting note:", error);

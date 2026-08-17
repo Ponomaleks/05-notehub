@@ -2,6 +2,10 @@
 
 A modern, responsive personal note-taking application powered by React 19, TypeScript, and Vite, featuring efficient server state caching with TanStack Query and schema-validated forms with Formik and Yup.
 
+## Documentation & API
+
+- [NoteHub API Documentation](https://notehub-public.goit.study/api/docs/)
+  
 ## Setup
 
 1. Clone the repository and install dependencies:
